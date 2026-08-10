@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ZM.RateLimiter.Api/ZM.RateLimiter.Api.csproj" />
+    <Project Path="src/ZM.RateLimiter.Core/ZM.RateLimiter.Core.csproj" />
+    <Project Path="src/ZM.RateLimiter.Redis/ZM.RateLimiter.Redis.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ZM.RateLimiter.Api.UnitTests/ZM.RateLimiter.Api.UnitTests.csproj" />
+  </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+</Solution>

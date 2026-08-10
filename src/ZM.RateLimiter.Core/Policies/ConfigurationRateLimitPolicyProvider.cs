@@ -1,0 +1,45 @@
+using Microsoft.Extensions.Options;
+using ZM.RateLimiter.Core.Abstractions;
+using ZM.RateLimiter.Core.Models;
+using ZM.RateLimiter.Core.Options;
+
+namespace ZM.RateLimiter.Core.Policies;
+
+public sealed class ConfigurationRateLimitPolicyProvider : IRateLimitPolicyProvider
+{
+    private readonly IOptionsMonitor<RateLimitingOptions> _options;
+
+    public ConfigurationRateLimitPolicyProvider(IOptionsMonitor<RateLimitingOptions> options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        _options = options;
+    }
+
+    public ValueTask<RateLimitPolicy?> GetPolicyAsync(string apiKey, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var options = _options.CurrentValue;
+
+        if (!options.ApiKeys.TryGetValue(apiKey, out var policyName))
+        {
+            policyName = options.DefaultPolicy;
+        }
+
+        if (string.IsNullOrWhiteSpace(policyName) ||
+            !options.Policies.TryGetValue(policyName, out var policy))
+        {
+            return ValueTask.FromResult<RateLimitPolicy?>(null);
+        }
+
+        return ValueTask.FromResult<RateLimitPolicy?>(
+            new RateLimitPolicy(
+                policyName,
+                policy.Algorithm,
+                policy.Limit,
+                policy.Window));
+    }
+}
