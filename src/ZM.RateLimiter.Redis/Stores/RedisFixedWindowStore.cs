@@ -27,7 +27,7 @@ public sealed class RedisFixedWindowStore : IFixedWindowStore
         ArgumentNullException.ThrowIfNull(options);
 
         _connectionMultiplexer = connectionMultiplexer;
-        _options = options.Value;
+        _options = options.Value; 
     }
 
     public async Task<long> IncrementAsync(string key, TimeSpan timeToLive, CancellationToken cancellationToken = default)

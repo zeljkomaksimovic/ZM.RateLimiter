@@ -27,22 +27,22 @@ public sealed class SlidingWindowAlgorithm : IRateLimiterAlgorithm
 
         var now = _timeProvider.GetUtcNow();
 
-        var snapshot = await _store.ConsumeAsync(
+        var storeResult = await _store.ConsumeAsync(
             request.CompositeKey,
             now,
             policy.Window,
             policy.Limit,
             cancellationToken);
 
-        if (snapshot.Added)
+        if (storeResult.Added)
         {
             return RateLimitResult.Allowed(
                 policy.Limit,
-                Math.Max(0, policy.Limit - snapshot.Count));
+                policy.Limit - storeResult.Count);
         }
 
         var retryAfter = CalculateRetryAfter(
-            snapshot.OldestTimestamp,
+            storeResult.OldestTimestamp,
             now,
             policy.Window);
 

@@ -9,6 +9,8 @@ public sealed class RateLimitingAlgorithmFactory : IRateLimitingAlgorithmFactory
 
     public RateLimitingAlgorithmFactory(IEnumerable<IRateLimiterAlgorithm> algorithms)
     {
+        ArgumentNullException.ThrowIfNull(algorithms);
+
         _algorithms = algorithms.ToDictionary(algorithm => algorithm.Type);
     }
 

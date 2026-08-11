@@ -1,5 +1,3 @@
-using ZM.RateLimiter.Core.Enums;
-
 namespace ZM.RateLimiter.Core.Models;
 
 public sealed record RateLimitResult(bool IsAllowed, long Limit, long Remaining, TimeSpan? RetryAfter)

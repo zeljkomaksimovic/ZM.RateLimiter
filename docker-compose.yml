@@ -6,14 +6,10 @@ services:
       dockerfile: src/ZM.RateLimiter.Api/Dockerfile
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # Single source of truth for the listen port. Do not also set ASPNETCORE_URLS:
-      # it takes precedence and would silently override this.
-      - ASPNETCORE_HTTP_PORTS=8080
+      - ASPNETCORE_URLS=http://0.0.0.0:9000
     ports:
-      - "8080:8080"
-    depends_on:
-      redis:
-        condition: service_healthy
+      - "9000:9000"
+      - "9001:9001"
     networks:
       - proxybackend
 
@@ -23,12 +19,6 @@ services:
       - "6379:6379"
     volumes:
       - redisvolume:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
     networks:
       - proxybackend
 

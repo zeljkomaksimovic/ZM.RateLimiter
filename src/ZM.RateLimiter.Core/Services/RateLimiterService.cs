@@ -10,9 +10,7 @@ public sealed class RateLimiterService : IRateLimiter
     private readonly IRateLimitPolicyProvider _policyProvider;
     private readonly IRateLimitingAlgorithmFactory _algorithmFactory;
 
-    public RateLimiterService(
-        IRateLimitPolicyProvider policyProvider,
-        IRateLimitingAlgorithmFactory algorithmFactory)
+    public RateLimiterService(IRateLimitPolicyProvider policyProvider, IRateLimitingAlgorithmFactory algorithmFactory)
     {
         ArgumentNullException.ThrowIfNull(policyProvider);
         ArgumentNullException.ThrowIfNull(algorithmFactory);
@@ -35,9 +33,7 @@ public sealed class RateLimiterService : IRateLimiter
         var algorithm = _algorithmFactory.Resolve(policy.Algorithm);
 
         var result = await algorithm.ConsumeAsync(
-            new RateLimitRequest(
-                CreatePartitionKey(apiKey),
-                resource),
+            new RateLimitRequest(CreatePartitionKey(apiKey), resource),
             policy,
             cancellationToken);
 

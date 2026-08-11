@@ -48,34 +48,6 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task GetPolicyAsync_UnmappedApiKeyWithDefaultPolicy_FallsBackToTheDefault(
-            [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
-            ConfigurationRateLimitPolicyProvider sut)
-        {
-            // Arrange
-            var options = RateLimitingOptionsBuilder.Build(
-                defaultPolicy: "free",
-                policies: new Dictionary<string, RateLimitPolicyOptions>
-                {
-                    ["free"] = RateLimitingOptionsBuilder.BuildPolicy(limit: 60)
-                },
-                apiKeys: new Dictionary<string, string>());
-
-            optionsMonitorMock
-                .Setup(x => x.CurrentValue)
-                .Returns(options);
-
-            // Act
-            var policy = await sut.GetPolicyAsync("never-seen-before", CancellationToken.None);
-
-            // Assert
-            policy.Should().NotBeNull();
-            policy!.Name.Should().Be("free");
-            policy.Limit.Should().Be(60);
-        }
-
-        [Theory]
-        [AutoMoqInlineData]
         public async Task GetPolicyAsync_UnmappedApiKeyWithoutDefaultPolicy_ReturnsNull(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)

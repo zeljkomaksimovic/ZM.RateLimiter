@@ -2,8 +2,6 @@ services:
   zm.ratelimiter.api:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-    # Ports are defined in docker-compose.yml only. Compose *appends* port lists rather
-    # than replacing them, so re-declaring them here publishes extra dead mappings.
     volumes:
       - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
       - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro

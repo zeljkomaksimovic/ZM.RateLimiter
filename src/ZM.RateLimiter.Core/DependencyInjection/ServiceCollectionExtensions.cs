@@ -13,9 +13,7 @@ namespace ZM.RateLimiter.Core.DependencyInjection;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddRateLimiterCore(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddRateLimiterCore(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
