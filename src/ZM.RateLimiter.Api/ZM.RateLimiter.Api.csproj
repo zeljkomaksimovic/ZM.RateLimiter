@@ -24,4 +24,9 @@
     <ProjectReference Include="..\ZM.RateLimiter.Redis\ZM.RateLimiter.Redis.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Top-level statements generate an internal Program class; WebApplicationFactory<Program> needs to see it. -->
+    <InternalsVisibleTo Include="ZM.RateLimiter.Api.IntegrationTests" />
+  </ItemGroup>
+
 </Project>
