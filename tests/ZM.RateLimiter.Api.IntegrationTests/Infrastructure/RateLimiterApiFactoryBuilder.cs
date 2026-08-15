@@ -39,9 +39,9 @@ internal sealed class RateLimiterApiFactoryBuilder
         return this;
     }
 
-    public RateLimiterApiFactoryBuilder WithApiKey(string apiKey, string policyName)
+    public RateLimiterApiFactoryBuilder WithClientPolicy(string clientKey, string policyName)
     {
-        _settings[$"{RateLimitingOptions.SectionName}:ApiKeys:{apiKey}"] = policyName;
+        _settings[$"{RateLimitingOptions.SectionName}:ClientPolicies:{clientKey}"] = policyName;
 
         return this;
     }

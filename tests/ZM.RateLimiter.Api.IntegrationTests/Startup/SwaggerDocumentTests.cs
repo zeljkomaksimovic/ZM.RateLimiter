@@ -16,7 +16,7 @@ public sealed class SwaggerDocumentTests : IDisposable
     {
         _factory = new RateLimiterApiFactoryBuilder(fixture, RedisFixture.CreateKeyPrefix("swagger"))
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
-            .WithApiKey("swagger-key", "free")
+            .WithClientPolicy("swagger-client", "free")
             .Build();
 
         _client = _factory.CreateClient();

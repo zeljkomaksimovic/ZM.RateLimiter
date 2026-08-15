@@ -19,11 +19,11 @@ public sealed class RateLimiterService : IRateLimiter
         _algorithmFactory = algorithmFactory;
     }
 
-    public async Task<RateLimitOutcome?> ConsumeAsync(string apiKey, string? resource = null, CancellationToken cancellationToken = default)
+    public async Task<RateLimitOutcome?> ConsumeAsync(string clientKey, string? resource = null, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientKey);
 
-        var policy = await _policyProvider.GetPolicyAsync(apiKey, cancellationToken);
+        var policy = await _policyProvider.GetPolicyAsync(clientKey, cancellationToken);
 
         if (policy is null)
         {
@@ -33,16 +33,16 @@ public sealed class RateLimiterService : IRateLimiter
         var algorithm = _algorithmFactory.Resolve(policy.Algorithm);
 
         var result = await algorithm.ConsumeAsync(
-            new RateLimitRequest(CreatePartitionKey(apiKey), resource),
+            new RateLimitRequest(CreatePartitionKey(clientKey), resource),
             policy,
             cancellationToken);
 
         return new RateLimitOutcome(policy, result);
     }
 
-    private static string CreatePartitionKey(string apiKey)
+    private static string CreatePartitionKey(string clientKey)
     {
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(apiKey));
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(clientKey));
 
         return Convert.ToHexStringLower(digest.AsSpan(0, 16));
     }

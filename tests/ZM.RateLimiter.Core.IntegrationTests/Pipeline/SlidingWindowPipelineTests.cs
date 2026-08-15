@@ -7,7 +7,7 @@ namespace ZM.RateLimiter.Core.IntegrationTests.Pipeline;
 
 public sealed class SlidingWindowPipelineTests
 {
-    private const string ApiKey = "sliding-window-key";
+    private const string ClientKey = "sliding-window-client";
     private const long Limit = 3;
 
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
@@ -15,7 +15,7 @@ public sealed class SlidingWindowPipelineTests
     private static RateLimiterHarness CreateHarness() =>
         new RateLimiterHarnessBuilder()
             .WithPolicy("pro", RateLimitingAlgorithmType.SlidingWindow, Limit, Window)
-            .WithApiKey(ApiKey, "pro")
+            .WithClientPolicy(ClientKey, "pro")
             .Build();
 
     [Fact]
@@ -29,7 +29,7 @@ public sealed class SlidingWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            outcomes.Add((await harness.RateLimiter.ConsumeAsync(ApiKey))!);
+            outcomes.Add((await harness.RateLimiter.ConsumeAsync(ClientKey))!);
         }
 
         // Assert
@@ -52,15 +52,15 @@ public sealed class SlidingWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            await harness.RateLimiter.ConsumeAsync(ApiKey);
+            await harness.RateLimiter.ConsumeAsync(ClientKey);
         }
 
         // Act
-        var immediately = await harness.RateLimiter.ConsumeAsync(ApiKey);
+        var immediately = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         harness.TimeProvider.Advance(TimeSpan.FromSeconds(25));
 
-        var later = await harness.RateLimiter.ConsumeAsync(ApiKey);
+        var later = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         // Retry-after tracks the oldest entry, so it shrinks as the window slides.
@@ -80,13 +80,13 @@ public sealed class SlidingWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit + 1; attempt++)
         {
-            await harness.RateLimiter.ConsumeAsync(ApiKey);
+            await harness.RateLimiter.ConsumeAsync(ClientKey);
         }
 
         // Act
         harness.TimeProvider.Advance(Window);
 
-        var outcome = await harness.RateLimiter.ConsumeAsync(ApiKey);
+        var outcome = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         outcome.Should().NotBeNull();
@@ -102,14 +102,14 @@ public sealed class SlidingWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit + 5; attempt++)
         {
-            await harness.RateLimiter.ConsumeAsync(ApiKey);
+            await harness.RateLimiter.ConsumeAsync(ClientKey);
         }
 
         // Act
         // Half the window later the three admitted entries are still inside it.
         harness.TimeProvider.Advance(TimeSpan.FromSeconds(30));
 
-        var outcome = await harness.RateLimiter.ConsumeAsync(ApiKey);
+        var outcome = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         outcome!.Result.IsAllowed.Should().BeFalse();
@@ -123,7 +123,7 @@ public sealed class SlidingWindowPipelineTests
         using var harness = CreateHarness();
 
         // Act
-        await harness.RateLimiter.ConsumeAsync(ApiKey);
+        await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         harness.SlidingWindowStore.ObservedKeys.Should().ContainSingle();
@@ -139,7 +139,7 @@ public sealed class SlidingWindowPipelineTests
         using var harness = CreateHarness();
 
         // Act
-        await harness.RateLimiter.ConsumeAsync(ApiKey, "reports");
+        await harness.RateLimiter.ConsumeAsync(ClientKey, "reports");
 
         // Assert
         harness.SlidingWindowStore.ObservedKeys.Should().ContainSingle()

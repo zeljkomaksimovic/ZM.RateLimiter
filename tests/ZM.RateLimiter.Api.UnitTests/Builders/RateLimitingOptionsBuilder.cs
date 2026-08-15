@@ -8,7 +8,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Builders
         public static RateLimitingOptions Build(
             string? defaultPolicy = null,
             IDictionary<string, RateLimitPolicyOptions>? policies = null,
-            IDictionary<string, string>? apiKeys = null)
+            IDictionary<string, string>? clientPolicies = null)
         {
             var options = new RateLimitingOptions
             {
@@ -20,9 +20,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Builders
                 ["free"] = BuildPolicy()
             };
 
-            apiKeys ??= new Dictionary<string, string>
+            clientPolicies ??= new Dictionary<string, string>
             {
-                ["demo-free-key"] = "free"
+                ["demo-free-client"] = "free"
             };
 
             foreach (var (name, policy) in policies)
@@ -30,9 +30,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Builders
                 options.Policies[name] = policy;
             }
 
-            foreach (var (apiKey, policyName) in apiKeys)
+            foreach (var (clientKey, policyName) in clientPolicies)
             {
-                options.ApiKeys[apiKey] = policyName;
+                options.ClientPolicies[clientKey] = policyName;
             }
 
             return options;

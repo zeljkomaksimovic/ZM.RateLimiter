@@ -8,7 +8,7 @@ namespace ZM.RateLimiter.Api.IntegrationTests.Consume;
 [Collection(RedisCollection.Name)]
 public sealed class SlidingWindowConsumeTests : IDisposable
 {
-    private const string ApiKey = "sliding-window-key";
+    private const string ClientKey = "sliding-window-client";
     private const long Limit = 3;
 
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
@@ -20,7 +20,7 @@ public sealed class SlidingWindowConsumeTests : IDisposable
     {
         _factory = new RateLimiterApiFactoryBuilder(fixture, RedisFixture.CreateKeyPrefix("sliding"))
             .WithPolicy("pro", RateLimitingAlgorithmType.SlidingWindow, Limit, Window)
-            .WithApiKey(ApiKey, "pro")
+            .WithClientPolicy(ClientKey, "pro")
             .Build();
 
         _client = _factory.CreateClient();
@@ -34,7 +34,7 @@ public sealed class SlidingWindowConsumeTests : IDisposable
 
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            responses.Add(await _client.ConsumeSuccessfullyAsync(ApiKey));
+            responses.Add(await _client.ConsumeSuccessfullyAsync(ClientKey));
         }
 
         // Assert
@@ -55,11 +55,11 @@ public sealed class SlidingWindowConsumeTests : IDisposable
         await ExhaustAsync();
 
         // Act
-        var immediately = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var immediately = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(25));
 
-        var later = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var later = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         // Retry-after tracks the oldest admitted entry, so it shrinks as the window slides.
@@ -80,7 +80,7 @@ public sealed class SlidingWindowConsumeTests : IDisposable
         // Act
         _factory.TimeProvider.Advance(Window);
 
-        var body = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var body = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         body.Allowed.Should().BeTrue();
@@ -92,18 +92,18 @@ public sealed class SlidingWindowConsumeTests : IDisposable
     {
         // Arrange
         // Three admissions spread across the window: at 0s, 20s and 40s.
-        await _client.ConsumeSuccessfullyAsync(ApiKey);
+        await _client.ConsumeSuccessfullyAsync(ClientKey);
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(20));
-        await _client.ConsumeSuccessfullyAsync(ApiKey);
+        await _client.ConsumeSuccessfullyAsync(ClientKey);
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(20));
-        await _client.ConsumeSuccessfullyAsync(ApiKey);
+        await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Act
         // At 60s only the first entry has aged out, so exactly one slot comes back.
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(20));
 
-        var reclaimed = await _client.ConsumeSuccessfullyAsync(ApiKey);
-        var stillLimited = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var reclaimed = await _client.ConsumeSuccessfullyAsync(ClientKey);
+        var stillLimited = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         // This is the behaviour that separates a sliding window from a fixed one: capacity trickles
@@ -118,7 +118,7 @@ public sealed class SlidingWindowConsumeTests : IDisposable
     {
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            await _client.ConsumeSuccessfullyAsync(ApiKey);
+            await _client.ConsumeSuccessfullyAsync(ClientKey);
         }
     }
 

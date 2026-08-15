@@ -39,18 +39,18 @@ public sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimiting
                 $"DefaultPolicy '{options.DefaultPolicy}' does not match any configured policy.");
         }
 
-        foreach (var (apiKey, policyName) in options.ApiKeys)
+        foreach (var (clientKey, policyName) in options.ClientPolicies)
         {
-            if (string.IsNullOrWhiteSpace(apiKey))
+            if (string.IsNullOrWhiteSpace(clientKey))
             {
-                failures.Add("An API key must not be empty.");
+                failures.Add("A client key must not be empty.");
                 continue;
             }
 
             if (string.IsNullOrWhiteSpace(policyName) || !options.Policies.ContainsKey(policyName))
             {
                 failures.Add(
-                    $"An API key is mapped to policy '{policyName}', which is not configured.");
+                    $"A client key is mapped to policy '{policyName}', which is not configured.");
             }
         }
 

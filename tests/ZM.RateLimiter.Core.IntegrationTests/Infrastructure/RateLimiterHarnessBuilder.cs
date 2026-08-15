@@ -43,9 +43,9 @@ internal sealed class RateLimiterHarnessBuilder
         return this;
     }
 
-    public RateLimiterHarnessBuilder WithApiKey(string apiKey, string policyName)
+    public RateLimiterHarnessBuilder WithClientPolicy(string clientKey, string policyName)
     {
-        _configuration[$"{RateLimitingOptions.SectionName}:ApiKeys:{apiKey}"] = policyName;
+        _configuration[$"{RateLimitingOptions.SectionName}:ClientPolicies:{clientKey}"] = policyName;
 
         return this;
     }

@@ -9,6 +9,6 @@ public sealed class RateLimitingOptions
     public Dictionary<string, RateLimitPolicyOptions> Policies { get; set; } =
         new(StringComparer.OrdinalIgnoreCase);
 
-    public Dictionary<string, string> ApiKeys { get; set; } =
+    public Dictionary<string, string> ClientPolicies { get; set; } =
         new(StringComparer.Ordinal);
 }

@@ -13,18 +13,18 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
     {
         [Theory]
         [AutoMoqInlineData]
-        public async Task ConsumeAsync_UnknownApiKey_ReturnsNullWithoutResolvingAlgorithm(
+        public async Task ConsumeAsync_UnknownClientKey_ReturnsNullWithoutResolvingAlgorithm(
             [Frozen] Mock<IRateLimitPolicyProvider> policyProviderMock,
             [Frozen] Mock<IRateLimitingAlgorithmFactory> algorithmFactoryMock,
             RateLimiterService sut)
         {
             // Arrange
             policyProviderMock
-                .Setup(x => x.GetPolicyAsync("unknown-key", It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetPolicyAsync("unknown-client", It.IsAny<CancellationToken>()))
                 .ReturnsAsync((RateLimitPolicy?)null);
 
             // Act
-            var outcome = await sut.ConsumeAsync("unknown-key", null, CancellationToken.None);
+            var outcome = await sut.ConsumeAsync("unknown-client", null, CancellationToken.None);
 
             // Assert
             outcome.Should().BeNull();
@@ -36,7 +36,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task ConsumeAsync_KnownApiKey_ResolvesTheAlgorithmNamedByThePolicy(
+        public async Task ConsumeAsync_KnownClientKey_ResolvesTheAlgorithmNamedByThePolicy(
             [Frozen] Mock<IRateLimitPolicyProvider> policyProviderMock,
             [Frozen] Mock<IRateLimitingAlgorithmFactory> algorithmFactoryMock,
             Mock<IRateLimiterAlgorithm> algorithmMock,
@@ -51,7 +51,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
             var expected = RateLimitResult.Allowed(policy.Limit, policy.Limit - 1);
 
             policyProviderMock
-                .Setup(x => x.GetPolicyAsync("demo-pro-key", It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetPolicyAsync("demo-pro-client", It.IsAny<CancellationToken>()))
                 .ReturnsAsync(policy);
 
             algorithmFactoryMock
@@ -66,7 +66,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
                 .ReturnsAsync(expected);
 
             // Act
-            var outcome = await sut.ConsumeAsync("demo-pro-key", "orders", CancellationToken.None);
+            var outcome = await sut.ConsumeAsync("demo-pro-client", "orders", CancellationToken.None);
 
             // Assert
             outcome.Should().NotBeNull();
@@ -87,20 +87,20 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task ConsumeAsync_KnownApiKey_PartitionsOnADigestRatherThanTheRawApiKey(
+        public async Task ConsumeAsync_KnownClientKey_PartitionsOnADigestRatherThanTheRawClientKey(
             [Frozen] Mock<IRateLimitPolicyProvider> policyProviderMock,
             [Frozen] Mock<IRateLimitingAlgorithmFactory> algorithmFactoryMock,
             Mock<IRateLimiterAlgorithm> algorithmMock,
             RateLimiterService sut)
         {
             // Arrange
-            const string apiKey = "super-secret-api-key";
+            const string clientKey = "super-secret-client-key";
 
             var policy = RateLimitPolicyBuilder.Build();
             var captured = default(RateLimitRequest);
 
             policyProviderMock
-                .Setup(x => x.GetPolicyAsync(apiKey, It.IsAny<CancellationToken>()))
+                .Setup(x => x.GetPolicyAsync(clientKey, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(policy);
 
             algorithmFactoryMock
@@ -116,11 +116,11 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
                 .ReturnsAsync(RateLimitResult.Allowed(policy.Limit, policy.Limit - 1));
 
             // Act
-            await sut.ConsumeAsync(apiKey, "orders", CancellationToken.None);
+            await sut.ConsumeAsync(clientKey, "orders", CancellationToken.None);
 
             // Assert
             captured.Should().NotBeNull();
-            captured!.Key.Should().NotContain(apiKey);
+            captured!.Key.Should().NotContain(clientKey);
             captured.Key.Should().MatchRegex("^[0-9a-f]{32}$");
             captured.Resource.Should().Be("orders");
             captured.CompositeKey.Should().Be($"{captured.Key}:orders");
@@ -128,7 +128,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task ConsumeAsync_SameApiKey_ProducesAStablePartitionAcrossCalls(
+        public async Task ConsumeAsync_SameClientKey_ProducesAStablePartitionAcrossCalls(
             [Frozen] Mock<IRateLimitPolicyProvider> policyProviderMock,
             [Frozen] Mock<IRateLimitingAlgorithmFactory> algorithmFactoryMock,
             Mock<IRateLimiterAlgorithm> algorithmMock,
@@ -155,9 +155,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
                 .ReturnsAsync(RateLimitResult.Allowed(policy.Limit, policy.Limit - 1));
 
             // Act
-            await sut.ConsumeAsync("key-a", null, CancellationToken.None);
-            await sut.ConsumeAsync("key-a", null, CancellationToken.None);
-            await sut.ConsumeAsync("key-b", null, CancellationToken.None);
+            await sut.ConsumeAsync("client-a", null, CancellationToken.None);
+            await sut.ConsumeAsync("client-a", null, CancellationToken.None);
+            await sut.ConsumeAsync("client-b", null, CancellationToken.None);
 
             // Assert
             captured[0].Should().Be(captured[1]);
@@ -167,12 +167,12 @@ namespace ZM.RateLimiter.Api.UnitTests.Services
         [Theory]
         [AutoMoqInlineData("")]
         [AutoMoqInlineData("   ")]
-        public async Task ConsumeAsync_BlankApiKey_Throws(
-            string apiKey,
+        public async Task ConsumeAsync_BlankClientKey_Throws(
+            string clientKey,
             RateLimiterService sut)
         {
             // Act
-            var act = async () => await sut.ConsumeAsync(apiKey, null, CancellationToken.None);
+            var act = async () => await sut.ConsumeAsync(clientKey, null, CancellationToken.None);
 
             // Assert
             await act.Should().ThrowAsync<ArgumentException>();

@@ -9,7 +9,7 @@ namespace ZM.RateLimiter.Api.IntegrationTests.Consume;
 [Collection(RedisCollection.Name)]
 public sealed class FixedWindowConsumeTests : IDisposable
 {
-    private const string ApiKey = "fixed-window-key";
+    private const string ClientKey = "fixed-window-client";
     private const long Limit = 3;
 
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
@@ -21,7 +21,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
     {
         _factory = new RateLimiterApiFactoryBuilder(fixture, RedisFixture.CreateKeyPrefix("fixed"))
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, Limit, Window)
-            .WithApiKey(ApiKey, "free")
+            .WithClientPolicy(ClientKey, "free")
             // Twenty seconds into a window, so retry-after is not trivially the whole window.
             .StartingAt(RateLimiterApiFactoryBuilder.DefaultStartTime.AddSeconds(20))
             .Build();
@@ -37,7 +37,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
 
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            responses.Add(await _client.ConsumeSuccessfullyAsync(ApiKey));
+            responses.Add(await _client.ConsumeSuccessfullyAsync(ClientKey));
         }
 
         // Assert
@@ -59,7 +59,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
         await ExhaustAsync();
 
         // Act
-        var body = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var body = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         body.Allowed.Should().BeFalse();
@@ -74,7 +74,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
         await ExhaustAsync();
 
         // Act
-        using var response = await _client.ConsumeAsync(ApiKey);
+        using var response = await _client.ConsumeAsync(ClientKey);
 
         // Assert
         // Current behaviour: a denial is reported in the payload, not as HTTP 429 with a Retry-After
@@ -92,7 +92,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
         // Act
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(40));
 
-        var body = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var body = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         body.Allowed.Should().BeTrue();
@@ -108,7 +108,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
         // Act
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(39));
 
-        var body = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var body = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         body.Allowed.Should().BeFalse();
@@ -119,7 +119,7 @@ public sealed class FixedWindowConsumeTests : IDisposable
     {
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            await _client.ConsumeSuccessfullyAsync(ApiKey);
+            await _client.ConsumeSuccessfullyAsync(ClientKey);
         }
     }
 

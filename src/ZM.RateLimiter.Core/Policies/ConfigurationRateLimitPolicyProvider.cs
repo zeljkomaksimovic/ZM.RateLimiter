@@ -16,15 +16,15 @@ public sealed class ConfigurationRateLimitPolicyProvider : IRateLimitPolicyProvi
         _options = options;
     }
 
-    public ValueTask<RateLimitPolicy?> GetPolicyAsync(string apiKey, CancellationToken cancellationToken = default)
+    public ValueTask<RateLimitPolicy?> GetPolicyAsync(string clientKey, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(apiKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(clientKey);
 
         cancellationToken.ThrowIfCancellationRequested();
 
         var options = _options.CurrentValue;
 
-        if (!options.ApiKeys.TryGetValue(apiKey, out var policyName))
+        if (!options.ClientPolicies.TryGetValue(clientKey, out var policyName))
         {
             return ValueTask.FromResult<RateLimitPolicy?>(null);
         }

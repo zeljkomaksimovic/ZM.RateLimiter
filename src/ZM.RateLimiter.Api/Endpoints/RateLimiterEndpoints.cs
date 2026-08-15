@@ -7,7 +7,7 @@ namespace ZM.RateLimiter.Api.Endpoints;
 
 public sealed class RateLimiterEndpoints : ICarterModule
 {
-    private const string ApiKeyHeaderName = "X-Api-Key";
+    private const string ClientKeyHeaderName = "X-Client-Key";
 
     public void AddRoutes(IEndpointRouteBuilder app)
     {
@@ -17,35 +17,35 @@ public sealed class RateLimiterEndpoints : ICarterModule
 
         group.MapPost("/consume", HandleConsumeAsync)
             .WithName("ConsumeRateLimit")
-            .WithSummary("Consumes one request against the policy bound to the supplied API key.")
+            .WithSummary("Consumes one request against the policy bound to the supplied client key.")
             .Produces<ConsumeRateLimitResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
     }
 
     private static async Task<IResult> HandleConsumeAsync(
-        [FromHeader(Name = ApiKeyHeaderName)] string? apiKey,
+        [FromHeader(Name = ClientKeyHeaderName)] string? clientKey,
         ConsumeRateLimitRequest? request,
         IRateLimiter rateLimiter,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(apiKey))
+        if (string.IsNullOrWhiteSpace(clientKey))
         {
             return Results.Problem(
-                title: "Missing API key.",
-                detail: $"The '{ApiKeyHeaderName}' header is required.",
+                title: "Missing client key.",
+                detail: $"The '{ClientKeyHeaderName}' header is required.",
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 
         var outcome = await rateLimiter.ConsumeAsync(
-            apiKey,
+            clientKey,
             request?.Resource,
             cancellationToken);
 
         if (outcome is null)
         {
             return Results.Problem(
-                title: "Unknown API key.",
-                detail: "The supplied API key is not associated with a rate limiting policy.",
+                title: "Unknown client key.",
+                detail: "The supplied client key is not associated with a rate limiting policy.",
                 statusCode: StatusCodes.Status401Unauthorized);
         }
 

@@ -7,7 +7,7 @@ namespace ZM.RateLimiter.Core.IntegrationTests.Pipeline;
 
 public sealed class FixedWindowPipelineTests
 {
-    private const string ApiKey = "fixed-window-key";
+    private const string ClientKey = "fixed-window-client";
     private const long Limit = 3;
 
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
@@ -18,7 +18,7 @@ public sealed class FixedWindowPipelineTests
     private static RateLimiterHarness CreateHarness() =>
         new RateLimiterHarnessBuilder()
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, Limit, Window)
-            .WithApiKey(ApiKey, "free")
+            .WithClientPolicy(ClientKey, "free")
             .StartingAt(StartTime)
             .Build();
 
@@ -33,7 +33,7 @@ public sealed class FixedWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            outcomes.Add((await harness.RateLimiter.ConsumeAsync(ApiKey))!);
+            outcomes.Add((await harness.RateLimiter.ConsumeAsync(ClientKey))!);
         }
 
         // Assert
@@ -56,11 +56,11 @@ public sealed class FixedWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit; attempt++)
         {
-            await harness.RateLimiter.ConsumeAsync(ApiKey);
+            await harness.RateLimiter.ConsumeAsync(ClientKey);
         }
 
         // Act
-        var outcome = await harness.RateLimiter.ConsumeAsync(ApiKey);
+        var outcome = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         outcome.Should().NotBeNull();
@@ -78,13 +78,13 @@ public sealed class FixedWindowPipelineTests
 
         for (var attempt = 0; attempt < Limit + 1; attempt++)
         {
-            await harness.RateLimiter.ConsumeAsync(ApiKey);
+            await harness.RateLimiter.ConsumeAsync(ClientKey);
         }
 
         // Act
         harness.TimeProvider.Advance(TimeSpan.FromSeconds(40));
 
-        var outcome = await harness.RateLimiter.ConsumeAsync(ApiKey);
+        var outcome = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         outcome.Should().NotBeNull();
@@ -102,9 +102,9 @@ public sealed class FixedWindowPipelineTests
         using var harness = CreateHarness();
 
         // Act
-        await harness.RateLimiter.ConsumeAsync(ApiKey);
+        await harness.RateLimiter.ConsumeAsync(ClientKey);
         harness.TimeProvider.Advance(TimeSpan.FromSeconds(39));
-        await harness.RateLimiter.ConsumeAsync(ApiKey);
+        await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         harness.FixedWindowStore.ObservedKeys.Should().HaveCount(2);
@@ -118,7 +118,7 @@ public sealed class FixedWindowPipelineTests
         using var harness = CreateHarness();
 
         // Act
-        await harness.RateLimiter.ConsumeAsync(ApiKey);
+        await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
         harness.FixedWindowStore.ObservedKeys.Should().ContainSingle();

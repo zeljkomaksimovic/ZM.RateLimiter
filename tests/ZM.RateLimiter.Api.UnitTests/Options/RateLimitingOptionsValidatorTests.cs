@@ -27,7 +27,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Options
             // Arrange
             var options = RateLimitingOptionsBuilder.Build(
                 policies: new Dictionary<string, RateLimitPolicyOptions>(),
-                apiKeys: new Dictionary<string, string>());
+                clientPolicies: new Dictionary<string, string>());
 
             // Act
             var result = sut.Validate(null, options);
@@ -93,20 +93,20 @@ namespace ZM.RateLimiter.Api.UnitTests.Options
 
         [Theory]
         [AutoMoqInlineData]
-        public void Validate_ApiKeyMappedToMissingPolicy_FailsWithoutEchoingTheApiKey(
+        public void Validate_ClientKeyMappedToMissingPolicy_FailsWithoutEchoingTheClientKey(
             RateLimitingOptionsValidator sut)
         {
             // Arrange
-            const string apiKey = "super-secret-api-key";
+            const string clientKey = "super-secret-client-key";
 
             var options = RateLimitingOptionsBuilder.Build(
                 policies: new Dictionary<string, RateLimitPolicyOptions>
                 {
                     ["free"] = RateLimitingOptionsBuilder.BuildPolicy()
                 },
-                apiKeys: new Dictionary<string, string>
+                clientPolicies: new Dictionary<string, string>
                 {
-                    [apiKey] = "policy-that-does-not-exist"
+                    [clientKey] = "policy-that-does-not-exist"
                 });
 
             // Act
@@ -115,7 +115,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Options
             // Assert
             result.Failed.Should().BeTrue();
             result.FailureMessage.Should().Contain("policy-that-does-not-exist");
-            result.FailureMessage.Should().NotContain(apiKey);
+            result.FailureMessage.Should().NotContain(clientKey);
         }
 
         [Theory]
@@ -130,9 +130,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Options
                 {
                     ["broken"] = RateLimitingOptionsBuilder.BuildPolicy(limit: 0, window: TimeSpan.Zero)
                 },
-                apiKeys: new Dictionary<string, string>
+                clientPolicies: new Dictionary<string, string>
                 {
-                    ["key"] = "also-missing"
+                    ["client"] = "also-missing"
                 });
 
             // Act

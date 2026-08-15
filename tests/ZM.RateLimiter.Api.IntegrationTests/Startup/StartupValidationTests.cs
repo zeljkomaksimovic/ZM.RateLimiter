@@ -34,12 +34,12 @@ public sealed class StartupValidationTests
     }
 
     [Fact]
-    public void Startup_WithAnApiKeyBoundToAMissingPolicy_FailsFast()
+    public void Startup_WithAClientKeyBoundToAMissingPolicy_FailsFast()
     {
         // Arrange
         using var factory = new RateLimiterApiFactoryBuilder(_fixture, RedisFixture.CreateKeyPrefix("dangling"))
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
-            .WithApiKey("dangling-key", "ghost")
+            .WithClientPolicy("dangling-client", "ghost")
             .Build();
 
         // Act
@@ -57,13 +57,13 @@ public sealed class StartupValidationTests
         // Arrange
         using var factory = new RateLimiterApiFactoryBuilder(_fixture, RedisFixture.CreateKeyPrefix("valid"))
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
-            .WithApiKey("valid-key", "free")
+            .WithClientPolicy("valid-client", "free")
             .Build();
 
         using var client = factory.CreateClient();
 
         // Act
-        var body = await client.ConsumeSuccessfullyAsync("valid-key");
+        var body = await client.ConsumeSuccessfullyAsync("valid-client");
 
         // Assert
         body.Allowed.Should().BeTrue();

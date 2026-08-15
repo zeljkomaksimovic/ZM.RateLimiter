@@ -6,16 +6,16 @@ namespace ZM.RateLimiter.Core.IntegrationTests.Pipeline;
 
 public sealed class PartitioningTests
 {
-    private const string FreeKey = "demo-free-key";
-    private const string OtherFreeKey = "another-free-key";
+    private const string FreeClientKey = "demo-free-client";
+    private const string OtherFreeClientKey = "another-free-client";
 
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
 
     private static RateLimiterHarness CreateHarness(RateLimitingAlgorithmType algorithm, long limit) =>
         new RateLimiterHarnessBuilder()
             .WithPolicy("free", algorithm, limit, Window)
-            .WithApiKey(FreeKey, "free")
-            .WithApiKey(OtherFreeKey, "free")
+            .WithClientPolicy(FreeClientKey, "free")
+            .WithClientPolicy(OtherFreeClientKey, "free")
             .Build();
 
     [Theory]
@@ -27,10 +27,10 @@ public sealed class PartitioningTests
         using var harness = CreateHarness(algorithm, limit: 1);
 
         // Act
-        var firstReports = await harness.RateLimiter.ConsumeAsync(FreeKey, "reports");
-        var secondReports = await harness.RateLimiter.ConsumeAsync(FreeKey, "reports");
-        var firstExports = await harness.RateLimiter.ConsumeAsync(FreeKey, "exports");
-        var unscoped = await harness.RateLimiter.ConsumeAsync(FreeKey);
+        var firstReports = await harness.RateLimiter.ConsumeAsync(FreeClientKey, "reports");
+        var secondReports = await harness.RateLimiter.ConsumeAsync(FreeClientKey, "reports");
+        var firstExports = await harness.RateLimiter.ConsumeAsync(FreeClientKey, "exports");
+        var unscoped = await harness.RateLimiter.ConsumeAsync(FreeClientKey);
 
         // Assert
         firstReports!.Result.IsAllowed.Should().BeTrue();
@@ -42,16 +42,16 @@ public sealed class PartitioningTests
     [Theory]
     [InlineData(RateLimitingAlgorithmType.FixedWindow)]
     [InlineData(RateLimitingAlgorithmType.SlidingWindow)]
-    public async Task Consume_WithDifferentApiKeysOnTheSamePolicy_KeepsIndependentCounters(
+    public async Task Consume_WithDifferentClientKeysOnTheSamePolicy_KeepsIndependentCounters(
         RateLimitingAlgorithmType algorithm)
     {
         // Arrange
         using var harness = CreateHarness(algorithm, limit: 1);
 
         // Act
-        var first = await harness.RateLimiter.ConsumeAsync(FreeKey);
-        var firstAgain = await harness.RateLimiter.ConsumeAsync(FreeKey);
-        var other = await harness.RateLimiter.ConsumeAsync(OtherFreeKey);
+        var first = await harness.RateLimiter.ConsumeAsync(FreeClientKey);
+        var firstAgain = await harness.RateLimiter.ConsumeAsync(FreeClientKey);
+        var other = await harness.RateLimiter.ConsumeAsync(OtherFreeClientKey);
 
         // Assert
         first!.Result.IsAllowed.Should().BeTrue();
@@ -60,19 +60,19 @@ public sealed class PartitioningTests
     }
 
     [Fact]
-    public async Task Consume_NeverPutsTheRawApiKeyIntoAStoreKey()
+    public async Task Consume_NeverPutsTheRawClientKeyIntoAStoreKey()
     {
         // Arrange
         using var harness = CreateHarness(RateLimitingAlgorithmType.FixedWindow, limit: 5);
 
         // Act
-        await harness.RateLimiter.ConsumeAsync(FreeKey);
+        await harness.RateLimiter.ConsumeAsync(FreeClientKey);
 
         // Assert
-        // RateLimiterService partitions on a truncated SHA-256 digest, so the key never reaches storage.
+        // RateLimiterService partitions on a truncated SHA-256 digest, so the client key never reaches storage.
         var storeKey = harness.FixedWindowStore.ObservedKeys.Should().ContainSingle().Subject;
 
-        storeKey.Should().NotContain(FreeKey);
+        storeKey.Should().NotContain(FreeClientKey);
 
         var segments = storeKey.Split(':');
 
@@ -88,7 +88,7 @@ public sealed class PartitioningTests
         using var harness = CreateHarness(RateLimitingAlgorithmType.FixedWindow, limit: 5);
 
         // Act
-        await harness.RateLimiter.ConsumeAsync(FreeKey, "reports");
+        await harness.RateLimiter.ConsumeAsync(FreeClientKey, "reports");
 
         // Assert
         var storeKey = harness.FixedWindowStore.ObservedKeys.Should().ContainSingle().Subject;
@@ -99,15 +99,15 @@ public sealed class PartitioningTests
     }
 
     [Fact]
-    public async Task Consume_ProducesAStablePartitionForTheSameApiKey()
+    public async Task Consume_ProducesAStablePartitionForTheSameClientKey()
     {
         // Arrange
         using var harnessOne = CreateHarness(RateLimitingAlgorithmType.FixedWindow, limit: 5);
         using var harnessTwo = CreateHarness(RateLimitingAlgorithmType.FixedWindow, limit: 5);
 
         // Act
-        await harnessOne.RateLimiter.ConsumeAsync(FreeKey);
-        await harnessTwo.RateLimiter.ConsumeAsync(FreeKey);
+        await harnessOne.RateLimiter.ConsumeAsync(FreeClientKey);
+        await harnessTwo.RateLimiter.ConsumeAsync(FreeClientKey);
 
         // Assert
         harnessTwo.FixedWindowStore.ObservedKeys
@@ -115,13 +115,13 @@ public sealed class PartitioningTests
     }
 
     [Fact]
-    public async Task Consume_WithAnUnknownApiKey_ReturnsNullAndTouchesNoStore()
+    public async Task Consume_WithAnUnknownClientKey_ReturnsNullAndTouchesNoStore()
     {
         // Arrange
         using var harness = CreateHarness(RateLimitingAlgorithmType.FixedWindow, limit: 5);
 
         // Act
-        var outcome = await harness.RateLimiter.ConsumeAsync("unknown-key");
+        var outcome = await harness.RateLimiter.ConsumeAsync("unknown-client");
 
         // Assert
         outcome.Should().BeNull();
@@ -130,7 +130,7 @@ public sealed class PartitioningTests
     }
 
     [Fact]
-    public async Task Consume_WithABlankApiKey_Throws()
+    public async Task Consume_WithABlankClientKey_Throws()
     {
         // Arrange
         using var harness = CreateHarness(RateLimitingAlgorithmType.FixedWindow, limit: 5);

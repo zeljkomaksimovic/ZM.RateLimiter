@@ -13,7 +13,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
     {
         [Theory]
         [AutoMoqInlineData]
-        public async Task GetPolicyAsync_MappedApiKey_ReturnsTheMappedPolicy(
+        public async Task GetPolicyAsync_MappedClientKey_ReturnsTheMappedPolicy(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)
         {
@@ -26,9 +26,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                         limit: 1000,
                         window: TimeSpan.FromMinutes(5))
                 },
-                apiKeys: new Dictionary<string, string>
+                clientPolicies: new Dictionary<string, string>
                 {
-                    ["demo-pro-key"] = "pro"
+                    ["demo-pro-client"] = "pro"
                 });
 
             optionsMonitorMock
@@ -36,7 +36,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                 .Returns(options);
 
             // Act
-            var policy = await sut.GetPolicyAsync("demo-pro-key", CancellationToken.None);
+            var policy = await sut.GetPolicyAsync("demo-pro-client", CancellationToken.None);
 
             // Assert
             policy.Should().NotBeNull();
@@ -48,14 +48,14 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task GetPolicyAsync_UnmappedApiKeyWithoutDefaultPolicy_ReturnsNull(
+        public async Task GetPolicyAsync_UnmappedClientKeyWithoutDefaultPolicy_ReturnsNull(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)
         {
             // Arrange
             var options = RateLimitingOptionsBuilder.Build(
                 defaultPolicy: null,
-                apiKeys: new Dictionary<string, string>());
+                clientPolicies: new Dictionary<string, string>());
 
             optionsMonitorMock
                 .Setup(x => x.CurrentValue)
@@ -70,7 +70,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task GetPolicyAsync_ApiKeyMappedToMissingPolicy_ReturnsNull(
+        public async Task GetPolicyAsync_ClientKeyMappedToMissingPolicy_ReturnsNull(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)
         {
@@ -80,9 +80,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                 {
                     ["free"] = RateLimitingOptionsBuilder.BuildPolicy()
                 },
-                apiKeys: new Dictionary<string, string>
+                clientPolicies: new Dictionary<string, string>
                 {
-                    ["orphaned-key"] = "policy-that-does-not-exist"
+                    ["orphaned-client"] = "policy-that-does-not-exist"
                 });
 
             optionsMonitorMock
@@ -90,7 +90,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                 .Returns(options);
 
             // Act
-            var policy = await sut.GetPolicyAsync("orphaned-key", CancellationToken.None);
+            var policy = await sut.GetPolicyAsync("orphaned-client", CancellationToken.None);
 
             // Assert
             policy.Should().BeNull();
@@ -98,15 +98,15 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
 
         [Theory]
         [AutoMoqInlineData]
-        public async Task GetPolicyAsync_ApiKeyLookupIsCaseSensitive(
+        public async Task GetPolicyAsync_ClientKeyLookupIsCaseSensitive(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)
         {
             // Arrange
             var options = RateLimitingOptionsBuilder.Build(
-                apiKeys: new Dictionary<string, string>
+                clientPolicies: new Dictionary<string, string>
                 {
-                    ["demo-free-key"] = "free"
+                    ["demo-free-client"] = "free"
                 });
 
             optionsMonitorMock
@@ -114,7 +114,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                 .Returns(options);
 
             // Act
-            var policy = await sut.GetPolicyAsync("DEMO-FREE-KEY", CancellationToken.None);
+            var policy = await sut.GetPolicyAsync("DEMO-FREE-CLIENT", CancellationToken.None);
 
             // Assert
             policy.Should().BeNull();
@@ -132,9 +132,9 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                 {
                     ["free"] = RateLimitingOptionsBuilder.BuildPolicy(limit: 42)
                 },
-                apiKeys: new Dictionary<string, string>
+                clientPolicies: new Dictionary<string, string>
                 {
-                    ["demo-free-key"] = "FREE"
+                    ["demo-free-client"] = "FREE"
                 });
 
             optionsMonitorMock
@@ -142,7 +142,7 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
                 .Returns(options);
 
             // Act
-            var policy = await sut.GetPolicyAsync("demo-free-key", CancellationToken.None);
+            var policy = await sut.GetPolicyAsync("demo-free-client", CancellationToken.None);
 
             // Assert
             policy.Should().NotBeNull();
@@ -152,12 +152,12 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
         [Theory]
         [AutoMoqInlineData("")]
         [AutoMoqInlineData("   ")]
-        public async Task GetPolicyAsync_BlankApiKey_Throws(
-            string apiKey,
+        public async Task GetPolicyAsync_BlankClientKey_Throws(
+            string clientKey,
             ConfigurationRateLimitPolicyProvider sut)
         {
             // Act
-            var act = async () => await sut.GetPolicyAsync(apiKey, CancellationToken.None);
+            var act = async () => await sut.GetPolicyAsync(clientKey, CancellationToken.None);
 
             // Assert
             await act.Should().ThrowAsync<ArgumentException>();

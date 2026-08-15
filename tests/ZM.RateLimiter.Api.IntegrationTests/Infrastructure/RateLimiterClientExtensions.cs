@@ -6,11 +6,11 @@ namespace ZM.RateLimiter.Api.IntegrationTests.Infrastructure;
 internal static class RateLimiterClientExtensions
 {
     public const string ConsumeRoute = "/api/v1/rate-limiter/consume";
-    public const string ApiKeyHeaderName = "X-Api-Key";
+    public const string ClientKeyHeaderName = "X-Client-Key";
 
     public static Task<HttpResponseMessage> ConsumeAsync(
         this HttpClient client,
-        string? apiKey,
+        string? clientKey,
         string? resource = null)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, ConsumeRoute)
@@ -18,9 +18,9 @@ internal static class RateLimiterClientExtensions
             Content = JsonContent.Create(new ConsumeRateLimitRequest(resource))
         };
 
-        if (apiKey is not null)
+        if (clientKey is not null)
         {
-            request.Headers.TryAddWithoutValidation(ApiKeyHeaderName, apiKey);
+            request.Headers.TryAddWithoutValidation(ClientKeyHeaderName, clientKey);
         }
 
         return client.SendAsync(request);
@@ -28,10 +28,10 @@ internal static class RateLimiterClientExtensions
 
     public static async Task<ConsumeRateLimitResponse> ConsumeSuccessfullyAsync(
         this HttpClient client,
-        string apiKey,
+        string clientKey,
         string? resource = null)
     {
-        using var response = await client.ConsumeAsync(apiKey, resource);
+        using var response = await client.ConsumeAsync(clientKey, resource);
 
         response.EnsureSuccessStatusCode();
 

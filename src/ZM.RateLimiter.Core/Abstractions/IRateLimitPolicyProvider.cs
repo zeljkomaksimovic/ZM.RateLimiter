@@ -4,5 +4,5 @@ namespace ZM.RateLimiter.Core.Abstractions;
 
 public interface IRateLimitPolicyProvider
 {
-    ValueTask<RateLimitPolicy?> GetPolicyAsync(string apiKey, CancellationToken cancellationToken = default);
+    ValueTask<RateLimitPolicy?> GetPolicyAsync(string clientKey, CancellationToken cancellationToken = default);
 }

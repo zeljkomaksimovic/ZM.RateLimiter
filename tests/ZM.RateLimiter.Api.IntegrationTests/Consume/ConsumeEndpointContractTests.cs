@@ -11,7 +11,7 @@ namespace ZM.RateLimiter.Api.IntegrationTests.Consume;
 [Collection(RedisCollection.Name)]
 public sealed class ConsumeEndpointContractTests : IDisposable
 {
-    private const string ApiKey = "contract-free-key";
+    private const string ClientKey = "contract-free-client";
     private const long Limit = 5;
 
     private readonly RateLimiterApiFactory _factory;
@@ -21,17 +21,17 @@ public sealed class ConsumeEndpointContractTests : IDisposable
     {
         _factory = new RateLimiterApiFactoryBuilder(fixture, RedisFixture.CreateKeyPrefix("contract"))
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, Limit, TimeSpan.FromMinutes(1))
-            .WithApiKey(ApiKey, "free")
+            .WithClientPolicy(ClientKey, "free")
             .Build();
 
         _client = _factory.CreateClient();
     }
 
     [Fact]
-    public async Task Consume_WithoutTheApiKeyHeader_ReturnsUnauthorized()
+    public async Task Consume_WithoutTheClientKeyHeader_ReturnsUnauthorized()
     {
         // Act
-        using var response = await _client.ConsumeAsync(apiKey: null);
+        using var response = await _client.ConsumeAsync(clientKey: null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
@@ -39,13 +39,13 @@ public sealed class ConsumeEndpointContractTests : IDisposable
 
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
 
-        problem!.Title.Should().Be("Missing API key.");
+        problem!.Title.Should().Be("Missing client key.");
         problem.Status.Should().Be((int)HttpStatusCode.Unauthorized);
-        problem.Detail.Should().Contain(RateLimiterClientExtensions.ApiKeyHeaderName);
+        problem.Detail.Should().Contain(RateLimiterClientExtensions.ClientKeyHeaderName);
     }
 
     [Fact]
-    public async Task Consume_WithABlankApiKeyHeader_ReturnsUnauthorized()
+    public async Task Consume_WithABlankClientKeyHeader_ReturnsUnauthorized()
     {
         // Act
         using var response = await _client.ConsumeAsync("   ");
@@ -55,29 +55,29 @@ public sealed class ConsumeEndpointContractTests : IDisposable
 
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
 
-        problem!.Title.Should().Be("Missing API key.");
+        problem!.Title.Should().Be("Missing client key.");
     }
 
     [Fact]
-    public async Task Consume_WithAnUnmappedApiKey_ReturnsUnauthorized()
+    public async Task Consume_WithAnUnmappedClientKey_ReturnsUnauthorized()
     {
         // Act
-        using var response = await _client.ConsumeAsync("not-a-configured-key");
+        using var response = await _client.ConsumeAsync("not-a-configured-client");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
 
         var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
 
-        problem!.Title.Should().Be("Unknown API key.");
+        problem!.Title.Should().Be("Unknown client key.");
         problem.Detail.Should().Contain("not associated with a rate limiting policy");
     }
 
     [Fact]
-    public async Task Consume_WithAMappedApiKey_ReturnsThePolicySnapshot()
+    public async Task Consume_WithAMappedClientKey_ReturnsThePolicySnapshot()
     {
         // Act
-        var body = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var body = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         body.Should().BeEquivalentTo(new ConsumeRateLimitResponse(
@@ -95,7 +95,7 @@ public sealed class ConsumeEndpointContractTests : IDisposable
         // The endpoint takes a nullable request record, so an absent body must bind to null.
         using var request = new HttpRequestMessage(HttpMethod.Post, RateLimiterClientExtensions.ConsumeRoute);
 
-        request.Headers.TryAddWithoutValidation(RateLimiterClientExtensions.ApiKeyHeaderName, ApiKey);
+        request.Headers.TryAddWithoutValidation(RateLimiterClientExtensions.ClientKeyHeaderName, ClientKey);
 
         // Act
         using var response = await _client.SendAsync(request);
@@ -112,10 +112,10 @@ public sealed class ConsumeEndpointContractTests : IDisposable
     public async Task Consume_WithDifferentResources_KeepsIndependentCounters()
     {
         // Act
-        var reports = await _client.ConsumeSuccessfullyAsync(ApiKey, "reports");
-        var reportsAgain = await _client.ConsumeSuccessfullyAsync(ApiKey, "reports");
-        var exports = await _client.ConsumeSuccessfullyAsync(ApiKey, "exports");
-        var unscoped = await _client.ConsumeSuccessfullyAsync(ApiKey);
+        var reports = await _client.ConsumeSuccessfullyAsync(ClientKey, "reports");
+        var reportsAgain = await _client.ConsumeSuccessfullyAsync(ClientKey, "reports");
+        var exports = await _client.ConsumeSuccessfullyAsync(ClientKey, "exports");
+        var unscoped = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
         reports.Remaining.Should().Be(Limit - 1);
