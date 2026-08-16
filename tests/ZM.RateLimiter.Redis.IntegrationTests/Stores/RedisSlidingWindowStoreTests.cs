@@ -70,7 +70,6 @@ public sealed class RedisSlidingWindowStoreTests
     public async Task ConsumeAsync_AtTheSameTimestamp_StillAdmitsDistinctMembers()
     {
         // Arrange
-        // Members carry a GUID suffix, so identical timestamps must not collapse into one entry.
         var store = CreateStore();
         var key = nameof(ConsumeAsync_AtTheSameTimestamp_StillAdmitsDistinctMembers);
 
@@ -99,7 +98,6 @@ public sealed class RedisSlidingWindowStoreTests
         await store.ConsumeAsync(key, StartTime.AddSeconds(20), Window, Limit);
 
         // Act
-        // Exactly one window later the first entry is on the cutoff and gets evicted; the others stay.
         var result = await store.ConsumeAsync(key, StartTime + Window, Window, Limit);
 
         // Assert
@@ -112,7 +110,6 @@ public sealed class RedisSlidingWindowStoreTests
     public async Task ConsumeAsync_AppliesTheConfiguredKeyPrefixItself()
     {
         // Arrange
-        // Unlike the fixed window path, nothing upstream prefixes this key for the store.
         var store = CreateStore();
         var key = nameof(ConsumeAsync_AppliesTheConfiguredKeyPrefixItself);
         var database = _fixture.Connection.GetDatabase();
@@ -140,7 +137,6 @@ public sealed class RedisSlidingWindowStoreTests
             .KeyTimeToLiveAsync($"{_keyPrefix}:{key}");
 
         // Assert
-        // Abandoned keys have to fall out on their own; otherwise Redis grows without bound.
         timeToLive.Should().NotBeNull();
         timeToLive!.Value.Should().BeGreaterThan(Window - TimeSpan.FromSeconds(1)).And.BeLessThanOrEqualTo(Window);
     }
@@ -177,7 +173,6 @@ public sealed class RedisSlidingWindowStoreTests
             Enumerable.Range(0, callers).Select(_ => store.ConsumeAsync(key, StartTime, Window, limit)));
 
         // Assert
-        // The whole check-then-add sequence runs inside one Lua script, so it is atomic.
         results.Count(result => result.Added).Should().Be((int)limit);
         (await SortedSetLengthAsync(key)).Should().Be(limit);
     }

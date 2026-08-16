@@ -7,8 +7,6 @@ namespace ZM.RateLimiter.Api.IntegrationTests.Infrastructure;
 
 internal sealed class RateLimiterApiFactoryBuilder
 {
-    // A whole number of days is an exact multiple of any sub-hour window, which keeps window
-    // boundaries predictable when a test asserts on retry-after values.
     public static readonly DateTimeOffset DefaultStartTime = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private readonly Dictionary<string, string?> _settings = new(StringComparer.OrdinalIgnoreCase);
@@ -22,6 +20,13 @@ internal sealed class RateLimiterApiFactoryBuilder
         _settings[$"{RedisOptions.SectionName}:{nameof(RedisOptions.ConnectionString)}"] = fixture.ConnectionString;
         _settings[$"{RedisOptions.SectionName}:{nameof(RedisOptions.KeyPrefix)}"] = keyPrefix;
         _settings[$"{RedisOptions.SectionName}:{nameof(RedisOptions.Database)}"] = "0";
+    }
+
+    public RateLimiterApiFactoryBuilder WithDefaultPolicy(string? policyName)
+    {
+        _settings[$"{RateLimitingOptions.SectionName}:DefaultPolicy"] = policyName;
+
+        return this;
     }
 
     public RateLimiterApiFactoryBuilder WithPolicy(

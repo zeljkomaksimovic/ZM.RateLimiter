@@ -92,7 +92,6 @@ public sealed class ConsumeEndpointContractTests : IDisposable
     public async Task Consume_WithoutARequestBody_IsAccepted()
     {
         // Arrange
-        // The endpoint takes a nullable request record, so an absent body must bind to null.
         using var request = new HttpRequestMessage(HttpMethod.Post, RateLimiterClientExtensions.ConsumeRoute);
 
         request.Headers.TryAddWithoutValidation(RateLimiterClientExtensions.ClientKeyHeaderName, ClientKey);

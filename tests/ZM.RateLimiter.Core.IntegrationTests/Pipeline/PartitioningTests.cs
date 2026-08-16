@@ -69,7 +69,6 @@ public sealed class PartitioningTests
         await harness.RateLimiter.ConsumeAsync(FreeClientKey);
 
         // Assert
-        // RateLimiterService partitions on a truncated SHA-256 digest, so the client key never reaches storage.
         var storeKey = harness.FixedWindowStore.ObservedKeys.Should().ContainSingle().Subject;
 
         storeKey.Should().NotContain(FreeClientKey);
@@ -127,6 +126,28 @@ public sealed class PartitioningTests
         outcome.Should().BeNull();
         harness.FixedWindowStore.ObservedKeys.Should().BeEmpty();
         harness.SlidingWindowStore.ObservedKeys.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Consume_WithAnUnknownClientKey_AndADefaultPolicy_KeepsAPartitionPerClient()
+    {
+        // Arrange
+        using var harness = new RateLimiterHarnessBuilder()
+            .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 1, window: Window)
+            .WithDefaultPolicy("free")
+            .Build();
+
+        // Act
+        var first = await harness.RateLimiter.ConsumeAsync("stranger-one");
+        var firstAgain = await harness.RateLimiter.ConsumeAsync("stranger-one");
+        var other = await harness.RateLimiter.ConsumeAsync("stranger-two");
+
+        // Assert
+        first!.Result.IsAllowed.Should().BeTrue();
+        firstAgain!.Result.IsAllowed.Should().BeFalse();
+        other!.Result.IsAllowed.Should().BeTrue();
+
+        harness.FixedWindowStore.ObservedKeys.Distinct().Should().HaveCount(2);
     }
 
     [Fact]

@@ -73,8 +73,6 @@ public sealed class RedisFixedWindowStoreTests
         var afterSecond = await database.KeyTimeToLiveAsync(key);
 
         // Assert
-        // A rolling expiry would let a steady stream of requests keep a window alive forever, so the
-        // script only calls PEXPIRE when the counter is created.
         afterFirst.Should().NotBeNull().And.BeLessThanOrEqualTo(TimeToLive);
         afterSecond.Should().NotBeNull();
         afterSecond!.Value.Should().BeLessThan(afterFirst!.Value);
@@ -84,7 +82,6 @@ public sealed class RedisFixedWindowStoreTests
     public async Task IncrementAsync_UsesTheSuppliedKeyVerbatim()
     {
         // Arrange
-        // The key generator already applies the configured prefix, so the store must not apply it again.
         var store = CreateStore();
         var key = Key(nameof(IncrementAsync_UsesTheSuppliedKeyVerbatim));
         var database = _fixture.Connection.GetDatabase();
@@ -128,7 +125,6 @@ public sealed class RedisFixedWindowStoreTests
             Enumerable.Range(0, callers).Select(_ => store.IncrementAsync(key, TimeToLive)));
 
         // Assert
-        // INCR is atomic, so every caller must receive a distinct value in 1..callers.
         counts.Should().BeEquivalentTo(Enumerable.Range(1, callers).Select(value => (long)value));
     }
 

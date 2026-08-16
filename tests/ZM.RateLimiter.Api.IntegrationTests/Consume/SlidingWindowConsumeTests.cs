@@ -62,7 +62,6 @@ public sealed class SlidingWindowConsumeTests : IDisposable
         var later = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
-        // Retry-after tracks the oldest admitted entry, so it shrinks as the window slides.
         immediately.Allowed.Should().BeFalse();
         immediately.Remaining.Should().Be(0);
         immediately.RetryAfter.Should().Be(Window);
@@ -91,7 +90,6 @@ public sealed class SlidingWindowConsumeTests : IDisposable
     public async Task Consume_ReleasesCapacityGraduallyRatherThanAllAtOnce()
     {
         // Arrange
-        // Three admissions spread across the window: at 0s, 20s and 40s.
         await _client.ConsumeSuccessfullyAsync(ClientKey);
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(20));
         await _client.ConsumeSuccessfullyAsync(ClientKey);
@@ -99,15 +97,12 @@ public sealed class SlidingWindowConsumeTests : IDisposable
         await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Act
-        // At 60s only the first entry has aged out, so exactly one slot comes back.
         _factory.TimeProvider.Advance(TimeSpan.FromSeconds(20));
 
         var reclaimed = await _client.ConsumeSuccessfullyAsync(ClientKey);
         var stillLimited = await _client.ConsumeSuccessfullyAsync(ClientKey);
 
         // Assert
-        // This is the behaviour that separates a sliding window from a fixed one: capacity trickles
-        // back entry by entry instead of resetting in a burst at the boundary.
         reclaimed.Allowed.Should().BeTrue();
         reclaimed.Remaining.Should().Be(0);
         stillLimited.Allowed.Should().BeFalse();

@@ -26,7 +26,12 @@ public sealed class ConfigurationRateLimitPolicyProvider : IRateLimitPolicyProvi
 
         if (!options.ClientPolicies.TryGetValue(clientKey, out var policyName))
         {
-            return ValueTask.FromResult<RateLimitPolicy?>(null);
+            if (string.IsNullOrWhiteSpace(options.DefaultPolicy))
+            {
+                return ValueTask.FromResult<RateLimitPolicy?>(null);
+            }
+
+            policyName = options.DefaultPolicy;
         }
 
         if (!options.Policies.TryGetValue(policyName, out var policy))

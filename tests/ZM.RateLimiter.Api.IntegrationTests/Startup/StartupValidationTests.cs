@@ -27,7 +27,6 @@ public sealed class StartupValidationTests
         var act = () => factory.CreateClient();
 
         // Assert
-        // ValidateOnStart means a misconfigured deployment never accepts a single request.
         act.Should()
             .Throw<OptionsValidationException>()
             .Which.Failures.Should().ContainMatch("*'broken' must have a Limit greater than zero*");

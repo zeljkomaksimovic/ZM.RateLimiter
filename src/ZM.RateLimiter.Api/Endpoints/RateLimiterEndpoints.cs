@@ -17,7 +17,7 @@ public sealed class RateLimiterEndpoints : ICarterModule
 
         group.MapPost("/consume", HandleConsumeAsync)
             .WithName("ConsumeRateLimit")
-            .WithSummary("Consumes one request against the policy bound to the supplied client key.")
+            .WithSummary("Consumes one request against the policy bound to the supplied client key, or the default policy when one is configured.")
             .Produces<ConsumeRateLimitResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized);
     }

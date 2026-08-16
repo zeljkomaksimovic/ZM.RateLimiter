@@ -11,8 +11,6 @@ namespace ZM.RateLimiter.Core.IntegrationTests.Infrastructure;
 
 internal sealed class RateLimiterHarnessBuilder
 {
-    // A whole number of days is an exact multiple of any sub-hour window, which keeps window
-    // boundaries predictable when a test asserts on retry-after values.
     public static readonly DateTimeOffset DefaultStartTime = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private readonly Dictionary<string, string?> _configuration = new(StringComparer.OrdinalIgnoreCase);
@@ -90,8 +88,6 @@ internal sealed class RateLimiterHarnessBuilder
 
         var services = new ServiceCollection();
 
-        // Registered first on purpose: AddRateLimiterCore uses TryAddSingleton(TimeProvider.System),
-        // so anything already present wins.
         services.AddSingleton<TimeProvider>(timeProvider);
 
         if (_registerStores)

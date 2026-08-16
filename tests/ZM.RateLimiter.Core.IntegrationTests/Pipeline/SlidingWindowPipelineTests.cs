@@ -63,7 +63,6 @@ public sealed class SlidingWindowPipelineTests
         var later = await harness.RateLimiter.ConsumeAsync(ClientKey);
 
         // Assert
-        // Retry-after tracks the oldest entry, so it shrinks as the window slides.
         immediately!.Result.IsAllowed.Should().BeFalse();
         immediately.Result.Remaining.Should().Be(0);
         immediately.Result.RetryAfter.Should().Be(Window);
@@ -106,7 +105,6 @@ public sealed class SlidingWindowPipelineTests
         }
 
         // Act
-        // Half the window later the three admitted entries are still inside it.
         harness.TimeProvider.Advance(TimeSpan.FromSeconds(30));
 
         var outcome = await harness.RateLimiter.ConsumeAsync(ClientKey);
@@ -134,8 +132,6 @@ public sealed class SlidingWindowPipelineTests
     public async Task Consume_ForASlidingWindowPolicy_DoesNotUseTheKeyGenerator()
     {
         // Arrange
-        // SlidingWindowAlgorithm passes the composite key straight through; the storage package is
-        // responsible for prefixing it. The key must therefore carry no generator prefix.
         using var harness = CreateHarness();
 
         // Act

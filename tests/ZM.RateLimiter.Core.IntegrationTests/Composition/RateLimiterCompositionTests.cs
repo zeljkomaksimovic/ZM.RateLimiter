@@ -102,8 +102,6 @@ public sealed class RateLimiterCompositionTests
     public void AddRateLimiterCore_OnItsOwn_CannotSatisfyTheAlgorithmDependencies()
     {
         // Arrange
-        // Core registers no IFixedWindowStore, ISlidingWindowStore or IRateLimitKeyGenerator; those
-        // come from a storage package such as ZM.RateLimiter.Redis. This pins that contract.
         using var harness = new RateLimiterHarnessBuilder()
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
             .WithoutStores()

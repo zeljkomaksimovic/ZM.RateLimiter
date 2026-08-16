@@ -38,7 +38,6 @@ public sealed class RateLimitingOptionsBindingTests
     public async Task Consume_ResolvesPolicyNamesCaseInsensitively()
     {
         // Arrange
-        // The client key points at "FREE" while the policy is declared as "free".
         using var harness = new RateLimiterHarnessBuilder()
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
             .WithClientPolicy("demo-client", "FREE")
@@ -98,7 +97,6 @@ public sealed class RateLimitingOptionsBindingTests
         var act = () => harness.Options;
 
         // Assert
-        // The validator accumulates rather than short-circuiting, so one run surfaces both problems.
         var failures = act.Should().Throw<OptionsValidationException>().Which.Failures;
 
         failures.Should().HaveCount(2);
@@ -163,14 +161,30 @@ public sealed class RateLimitingOptionsBindingTests
     }
 
     [Fact]
-    public async Task Consume_WithAnUnmappedClientKey_IgnoresDefaultPolicy()
+    public async Task Consume_WithAnUnmappedClientKey_FallsBackToTheDefaultPolicy()
     {
         // Arrange
-        // DefaultPolicy is validated but never consumed by ConfigurationRateLimitPolicyProvider.
-        // This pins today's behaviour: unmapped client keys are rejected rather than falling back.
         using var harness = new RateLimiterHarnessBuilder()
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
             .WithDefaultPolicy("free")
+            .Build();
+
+        // Act
+        var outcome = await harness.RateLimiter.ConsumeAsync("never-configured-client");
+
+        // Assert
+        outcome.Should().NotBeNull();
+        outcome!.Policy.Name.Should().Be("free");
+        outcome.Policy.Limit.Should().Be(5);
+        outcome.Result.IsAllowed.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Consume_WithAnUnmappedClientKey_AndNoDefaultPolicy_IsRejected()
+    {
+        // Arrange
+        using var harness = new RateLimiterHarnessBuilder()
+            .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, limit: 5, window: TimeSpan.FromMinutes(1))
             .Build();
 
         // Act

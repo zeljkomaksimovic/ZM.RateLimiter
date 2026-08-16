@@ -122,7 +122,6 @@ namespace ZM.RateLimiter.Api.UnitTests.Algorithms
             result.Limit.Should().Be(10);
             result.Remaining.Should().Be(0);
 
-            // Now sits 30s into a 60s window that is aligned to midnight.
             result.RetryAfter.Should().Be(TimeSpan.FromSeconds(30));
         }
     }

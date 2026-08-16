@@ -22,7 +22,6 @@ public sealed class FixedWindowConsumeTests : IDisposable
         _factory = new RateLimiterApiFactoryBuilder(fixture, RedisFixture.CreateKeyPrefix("fixed"))
             .WithPolicy("free", RateLimitingAlgorithmType.FixedWindow, Limit, Window)
             .WithClientPolicy(ClientKey, "free")
-            // Twenty seconds into a window, so retry-after is not trivially the whole window.
             .StartingAt(RateLimiterApiFactoryBuilder.DefaultStartTime.AddSeconds(20))
             .Build();
 
@@ -77,8 +76,6 @@ public sealed class FixedWindowConsumeTests : IDisposable
         using var response = await _client.ConsumeAsync(ClientKey);
 
         // Assert
-        // Current behaviour: a denial is reported in the payload, not as HTTP 429 with a Retry-After
-        // header. This test pins that contract so a change to it has to be deliberate.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Headers.RetryAfter.Should().BeNull();
     }

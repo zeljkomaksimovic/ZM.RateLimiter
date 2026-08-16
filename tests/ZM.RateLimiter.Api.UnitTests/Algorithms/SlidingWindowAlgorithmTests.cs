@@ -102,7 +102,6 @@ namespace ZM.RateLimiter.Api.UnitTests.Algorithms
             result.IsAllowed.Should().BeFalse();
             result.Remaining.Should().Be(0);
 
-            // Oldest entry is 40s old, so it leaves a 60s window in another 20s.
             result.RetryAfter.Should().Be(TimeSpan.FromSeconds(20));
         }
 

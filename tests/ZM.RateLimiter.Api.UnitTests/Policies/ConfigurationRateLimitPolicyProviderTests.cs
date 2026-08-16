@@ -70,6 +70,71 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
 
         [Theory]
         [AutoMoqInlineData]
+        public async Task GetPolicyAsync_UnmappedClientKeyWithDefaultPolicy_ReturnsTheDefaultPolicy(
+            [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
+            ConfigurationRateLimitPolicyProvider sut)
+        {
+            // Arrange
+            var options = RateLimitingOptionsBuilder.Build(
+                defaultPolicy: "free",
+                policies: new Dictionary<string, RateLimitPolicyOptions>
+                {
+                    ["free"] = RateLimitingOptionsBuilder.BuildPolicy(
+                        RateLimitingAlgorithmType.FixedWindow,
+                        limit: 7,
+                        window: TimeSpan.FromMinutes(2))
+                },
+                clientPolicies: new Dictionary<string, string>());
+
+            optionsMonitorMock
+                .Setup(x => x.CurrentValue)
+                .Returns(options);
+
+            // Act
+            var policy = await sut.GetPolicyAsync("never-seen-before", CancellationToken.None);
+
+            // Assert
+            policy.Should().NotBeNull();
+            policy!.Name.Should().Be("free");
+            policy.Algorithm.Should().Be(RateLimitingAlgorithmType.FixedWindow);
+            policy.Limit.Should().Be(7);
+            policy.Window.Should().Be(TimeSpan.FromMinutes(2));
+        }
+
+        [Theory]
+        [AutoMoqInlineData]
+        public async Task GetPolicyAsync_CaseMismatchedClientKeyWithDefaultPolicy_ReturnsTheDefaultPolicy(
+            [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
+            ConfigurationRateLimitPolicyProvider sut)
+        {
+            // Arrange
+            var options = RateLimitingOptionsBuilder.Build(
+                defaultPolicy: "free",
+                policies: new Dictionary<string, RateLimitPolicyOptions>
+                {
+                    ["free"] = RateLimitingOptionsBuilder.BuildPolicy(limit: 9),
+                    ["pro"] = RateLimitingOptionsBuilder.BuildPolicy(limit: 99)
+                },
+                clientPolicies: new Dictionary<string, string>
+                {
+                    ["demo-pro-client"] = "pro"
+                });
+
+            optionsMonitorMock
+                .Setup(x => x.CurrentValue)
+                .Returns(options);
+
+            // Act
+            var policy = await sut.GetPolicyAsync("DEMO-PRO-CLIENT", CancellationToken.None);
+
+            // Assert
+            policy.Should().NotBeNull();
+            policy!.Name.Should().Be("free");
+            policy.Limit.Should().Be(9);
+        }
+
+        [Theory]
+        [AutoMoqInlineData]
         public async Task GetPolicyAsync_ClientKeyMappedToMissingPolicy_ReturnsNull(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)
@@ -98,12 +163,42 @@ namespace ZM.RateLimiter.Api.UnitTests.Policies
 
         [Theory]
         [AutoMoqInlineData]
+        public async Task GetPolicyAsync_ClientKeyMappedToMissingPolicy_DoesNotFallBackToTheDefaultPolicy(
+            [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
+            ConfigurationRateLimitPolicyProvider sut)
+        {
+            // Arrange
+            var options = RateLimitingOptionsBuilder.Build(
+                defaultPolicy: "free",
+                policies: new Dictionary<string, RateLimitPolicyOptions>
+                {
+                    ["free"] = RateLimitingOptionsBuilder.BuildPolicy()
+                },
+                clientPolicies: new Dictionary<string, string>
+                {
+                    ["orphaned-client"] = "policy-that-does-not-exist"
+                });
+
+            optionsMonitorMock
+                .Setup(x => x.CurrentValue)
+                .Returns(options);
+
+            // Act
+            var policy = await sut.GetPolicyAsync("orphaned-client", CancellationToken.None);
+
+            // Assert
+            policy.Should().BeNull();
+        }
+
+        [Theory]
+        [AutoMoqInlineData]
         public async Task GetPolicyAsync_ClientKeyLookupIsCaseSensitive(
             [Frozen] Mock<IOptionsMonitor<RateLimitingOptions>> optionsMonitorMock,
             ConfigurationRateLimitPolicyProvider sut)
         {
             // Arrange
             var options = RateLimitingOptionsBuilder.Build(
+                defaultPolicy: null,
                 clientPolicies: new Dictionary<string, string>
                 {
                     ["demo-free-client"] = "free"

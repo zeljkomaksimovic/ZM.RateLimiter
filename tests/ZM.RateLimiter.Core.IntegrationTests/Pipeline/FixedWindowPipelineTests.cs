@@ -12,7 +12,6 @@ public sealed class FixedWindowPipelineTests
 
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
 
-    // Twenty seconds into a window, so retry-after assertions are not trivially the full window.
     private static readonly DateTimeOffset StartTime = RateLimiterHarnessBuilder.DefaultStartTime.AddSeconds(20);
 
     private static RateLimiterHarness CreateHarness() =>
@@ -91,7 +90,6 @@ public sealed class FixedWindowPipelineTests
         outcome!.Result.IsAllowed.Should().BeTrue();
         outcome.Result.Remaining.Should().Be(Limit - 1);
 
-        // The window boundary is part of the key, so a rollover starts a fresh counter.
         harness.FixedWindowStore.ObservedKeys.Distinct().Should().HaveCount(2);
     }
 

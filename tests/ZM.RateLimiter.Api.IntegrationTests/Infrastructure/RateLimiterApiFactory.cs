@@ -23,10 +23,8 @@ internal sealed class RateLimiterApiFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        // "Testing" keeps appsettings.Development.json out of the picture.
         builder.UseEnvironment("Testing");
 
-        // Layered last, so these win over the shipped appsettings.json.
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(_settings));
 
         builder.ConfigureTestServices(services =>
